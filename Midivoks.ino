@@ -22,10 +22,10 @@ void setup(){
   midiIn.setHandleNoteOn(noteOn);
   midiIn.setHandleNoteOff(noteOff);
   midiIn.begin();
-  Serial2.begin(9600);
+  Serial.begin(9600);
 
   blink();
-  Serial2.println("Tämä on setupissa oleva println");
+  Serial.println("Tämä on setupissa oleva println");
   
   notesActive = 0;
 }
@@ -35,6 +35,8 @@ void loop() {
 }
 
 void noteOn(byte channel, byte pitch, byte vel){
+  Serial.print("Nuotti: ");
+  Serial.println(pitch);
   if (vel <= 0) {
     // noteOff
     return;
@@ -43,7 +45,7 @@ void noteOn(byte channel, byte pitch, byte vel){
       case 0:
         // new note -> 1st note
         // notesActive == 1
-        Serial2.println("Eka nuotti päällä!");
+        Serial.println("Eka nuotti päällä!");
         notesActive = 1;
         blink();
         break;
@@ -51,7 +53,7 @@ void noteOn(byte channel, byte pitch, byte vel){
         // 1st note -> 2nd note
         // new note -> 1st note
         // notesActive = 2
-        Serial2.println("Toka nuotti päällä!");
+        Serial.println("Toka nuotti päällä!");
         blink();
         notesActive = 2;
         break;
@@ -61,31 +63,35 @@ void noteOn(byte channel, byte pitch, byte vel){
         // new note -> 1st note
         // no change to 'notesActive'
         blink();
-        Serial2.println("Maksimimäärä nuotteja päällä!");
+        Serial.println("Maksimimäärä nuotteja päällä!");
         break;
     }
   }
 }
 
 void blink(){
-    digitalWrite(LEDboard, HIGH);
-    delay(50);
-    digitalWrite(LEDboard, LOW);
+  int loops = 3;
+  for (int i = 0; i < loops; i++) {
+      digitalWrite(LEDboard, HIGH);
+      delay(200);
+      digitalWrite(LEDboard, LOW);
+      delay(200);
+    }
   }
 
 void noteOff(byte channel, byte pitch, byte vel){
   switch(notesActive) {
       case 0:
         break;
-        Serial2.println("Ei nuotteja pois päältä");
+        Serial.println("Ei nuotteja pois päältä");
       case 1:
         // simply turn off note
-        Serial2.println("Eka nuotti pois päältä!");
+        Serial.println("Eka nuotti pois päältä!");
         notesActive = 0;
         break;
       case 2:
         // turn off 2nd note
-        Serial2.println("Toka nuotti pois päältä!");
+        Serial.println("Toka nuotti pois päältä!");
         notesActive = 1;
         break;
     }
