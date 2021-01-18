@@ -2,9 +2,9 @@
 //  CREATED BY ELMO ROHULA  //
 //////////////////////////////
 
-// MidiVoks
-// version 0.1.0
-// A MIDI IN device for the Polivoks synthesizer
+// Dual MIDI to CV
+// version 0.0.1
+// A Dual MIDI IN device
 
 #include <MIDI.h>
 
