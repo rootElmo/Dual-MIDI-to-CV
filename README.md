@@ -14,10 +14,10 @@ Here are the features planned for the module.
 
 **Note on/off logic (Under work)** 
 
-When top or bottom note is released and there are still "keys pressed", the code doesn't remember them being pressed. Instead of the top or bottom note getting new values from the keys still "on", the note simply turns off.
+Changed whole logic of the system. **Note On** now stores the highest and lowest key pressed.
 
-  * program doesn't remember pressed keys.
-  * pressed keys need to be stored and checked upon on **Note Off**
+  * **Note Off** logic still under work.
+  * Need to get keys stored and removed (true&false) before creating note priorities.
 
 **Gate signals for _Note On_ and _Note Off_ messages (Not started)**
 
@@ -40,5 +40,29 @@ When top or bottom note is released and there are still "keys pressed", the code
 
 **Add _velocity_ output (POSSIBLE FEATURE)**
 
+
+## Bugs/misc. notes
+
+// BUGS:
+
+
+// FIXED BUGS:
+// - 1. When two notes are active and top one is released
+// - both notes don't revert to bottom note's value.
+// - Program doesn't recognice note off ???
+// - FOUND DATE: 19.1.2021
+
+// ----> in "Note Off" switch, case "2", it checked if the
+// MIDI is not equal to top OR bottom note.
+// Since either was always true, since Note Off
+// was received only by one note, the program would misbehave.
+// Now it checks if the MIDI
+// Note Off is not equal to top note AND bottom note.
+// FIXING DATE: 18.1.2021
+
+// - 2. Top note isn't changing if 2 notes are already active.
+// - FOUND DATE: 19.1.2021
+//
+// ----> Problem with keyboard "ghosting". Note priority works correct
 
 Made by: Elmo Rohula
