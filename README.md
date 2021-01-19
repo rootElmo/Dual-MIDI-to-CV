@@ -2,6 +2,8 @@
 
 A simple circuit to get 2 CV outs from MIDI. CV will be scaled to 1V/Oct.
 
+I'm using a Teensy LC for development. MIDI takes one serial port, so I cannot use the serial monitor on the Arduino Uno. Teensy LC has the advantage of having multiple serial ports.
+
 **UNDER CONSTRUCTION**
 
 ## To-do
@@ -10,12 +12,12 @@ Here are the features planned for the module.
 
 **Add schematics (Not started)**
 
-**Note on/off logic (Done as of 18.1.2021)** 
+**Note on/off logic (Under work)** 
 
-Assign variables/flags to notes.
+When top or bottom note is released and there are still "keys pressed", the code doesn't remember them being pressed. Instead of the top or bottom note getting new values from the keys still "on", the note simply turns off.
 
-  * If both notes are pressed, and the either is released, the released note should turn off, not the one which was on first.
-  * Polivoks-style note priority logic; if both notes are on, and a new note is pressed which is higher than the lowest note -> lowest note stays on, higher note gets changed to new note.
+  * program doesn't remember pressed keys.
+  * pressed keys need to be stored and checked upon on **Note Off**
 
 **Gate signals for _Note On_ and _Note Off_ messages (Not started)**
 
