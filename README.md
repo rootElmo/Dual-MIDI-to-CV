@@ -10,36 +10,40 @@ I'm using a Teensy LC for development. MIDI takes one serial port, so I cannot u
 
 Here are the features planned for the module.
 
-**Add schematics (Not started)**
+**Add schematics (Started 23.1.2021, ONGOING)**
 
-**Note on/off logic (Under work)** 
+  * Will be updated as more components are added to the circuit.
+  * Can be viewed [here.](./schematics/schematics.pdf)
 
-Changed whole logic of the system. **Note On** now stores the highest and lowest key pressed.
+**Note on/off logic (Started 18.1.2021, ONGOING)** 
 
+  * Changed whole logic of the system. **Note On** now stores the highest and lowest key pressed.
   * **Note Off** logic still under work.
   * Need to get keys stored and removed (true&false) before creating note priorities.
 
-**Gate signals for _Note On_ and _Note Off_ messages (Not started)**
+**Gate signals for _Note On_ and _Note Off_ messages (Started 21.1.2021, ONGOING)**
 
-  * Simple **DigitalWrite** should be enough. Voltages can be amplified with op-amps.
+  * Simple **DigitalWrite** turns on a **LED**, signaling a **GATE HIGH**.
 
-**Make functions to send _Note_ values to _DAC_ (Not started)** 
+**Make functions to send _Note_ values to _DAC_ (Started 23.1.2021, ONGOING)** 
   
-  * **DAC** will be either 2 or 4 channel, **12-bit**.
+  * **DAC** used is the **MCP4728** 4-channel **DAC**.
   * Need to learn basic usage of a **DAC**.
+  * Currently only one channel sends out voltages.
 
 **Scale and trim _DAC_ output to match _1v/Oct-scaling_ (Not started)**
 
-**Implement pitchbend (Not started)**
+**Implement _pitchbend_ (Not started)**
 
-  * Math is required (yuck).
+  * Get pitchbend value from the MIDI message -> add to existing output voltages (Vout = NoteVoltage + pitchbendVoltage).
 
-**Add trigger outputs (POSSIBLE FEATURE)**
+**Add _trigger_ outputs (POSSIBLE FEATURE)**
 
   * Not mandatory, but could be helpful for some situations.
 
 **Add _velocity_ output (POSSIBLE FEATURE)**
 
+  * Works the same way as **Note On**
 
 ## Bugs/misc. notes
 
