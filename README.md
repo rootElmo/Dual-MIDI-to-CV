@@ -6,6 +6,11 @@ I'm using a Teensy LC for development. MIDI takes one serial port, so I cannot u
 
 Inspired by [midi2cv by elkayem](https://github.com/elkayem/midi2cv). (Basic functionality and operational logic).
 
+Uses the following libraries:
+
+[mcp4728 by Neuroelec/Neurostar](https://code.google.com/archive/p/neuroelec/downloads), related forum post [here](https://forum.arduino.cc/index.php?topic=51842.0).
+[Arduino MIDI Library by Francois Best](https://github.com/FortySevenEffects/arduino_midi_library)
+
 **UNDER CONSTRUCTION**
 
 ## To-do
@@ -40,6 +45,12 @@ Here are the features planned for the module.
 **Implement _pitchbend_ (Not started)**
 
   * Get pitchbend value from the MIDI message -> add to existing output voltages (Vout = NoteVoltage + pitchbendVoltage).
+
+**Implement changing of MIDI channel**
+
+  * Done via a "programming button"
+  * Hold down button for a certain period of time to enter programming mode
+  * Send _Note On_ from the desired channel. After saving the channel, device will only listen to that MIDI channel.
 
 **Add _trigger_ outputs (POSSIBLE FEATURE)**
 

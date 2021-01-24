@@ -6,8 +6,6 @@
 // version 0.0.1
 // A Dual MIDI IN device
 
-
-
 #include <MIDI.h>
 #include <Wire.h>
 #include "mcp4728.h"
