@@ -4,6 +4,8 @@ A simple circuit to get 2 CV outs from MIDI. CV will be scaled to 1V/Oct.
 
 I'm using a Teensy LC for development. MIDI takes one serial port, so I cannot use the serial monitor on the Arduino Uno. Teensy LC has the advantage of having multiple serial ports.
 
+Inspired by [midi2cv by elkayem](https://github.com/elkayem/midi2cv). (Basic functionality and operational logic).
+
 **UNDER CONSTRUCTION**
 
 ## To-do
@@ -31,7 +33,9 @@ Here are the features planned for the module.
   * Need to learn basic usage of a **DAC**.
   * Currently only one channel sends out voltages.
 
-**Scale and trim _DAC_ output to match _1v/Oct-scaling_ (Not started)**
+**Scale and trim _DAC_ output to match _1v/Oct-scaling_ (Started 23.1.2021, ONGOING)**
+
+  * Tracking is pretty accurate over multiple octaves. Some deviation can be seen. Could be remedied by hard-coding a scale factor and tweaking it, or by placing a trim potentiometer to the negative feedback loop of the scale amplifier op-amp.
 
 **Implement _pitchbend_ (Not started)**
 
@@ -43,30 +47,8 @@ Here are the features planned for the module.
 
 **Add _velocity_ output (POSSIBLE FEATURE)**
 
-  * Works the same way as **Note On**
+  * Should work the same way as **Note On**
 
-## Bugs/misc. notes
-
-// BUGS:
-
-
-// FIXED BUGS:
-// - 1. When two notes are active and top one is released
-// - both notes don't revert to bottom note's value.
-// - Program doesn't recognice note off ???
-// - FOUND DATE: 19.1.2021
-
-// ----> in "Note Off" switch, case "2", it checked if the
-// MIDI is not equal to top OR bottom note.
-// Since either was always true, since Note Off
-// was received only by one note, the program would misbehave.
-// Now it checks if the MIDI
-// Note Off is not equal to top note AND bottom note.
-// FIXING DATE: 18.1.2021
-
-// - 2. Top note isn't changing if 2 notes are already active.
-// - FOUND DATE: 19.1.2021
-//
-// ----> Problem with keyboard "ghosting". Note priority works correct
+## Notes
 
 Made by: Elmo Rohula

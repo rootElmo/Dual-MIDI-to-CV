@@ -76,12 +76,25 @@ void noteOff(byte channel, byte pitch, byte vel){
     Serial.println(vel);
     // Function called, when "Note Off" received from MIDI
 
+    int notesActive = 0;
+    
     if (notesList[pitch] == false) {
         return;
-    } else  if (notesList[pitch] == true) {
+    } else if (notesList[pitch] == true) {
         notesList[pitch] = false;
-        digitalWrite(gateLED, LOW);
     }
+
+    for (int i = 0; i < 128; i++) {   
+        if (notesList[pitch] == true) {
+            notesActive++;    
+        }    
+    }
+    if (notesActive != 0) {
+        return;
+    } else if (notesActive == 0){
+        digitalWrite(gateLED, LOW);    
+    }
+    handleNote();
     
 }
 
@@ -102,11 +115,11 @@ void handleNote() {
         Serial.println(topNote);
         sendToDac(topNote);
         digitalWrite(gateLED, HIGH);
-    } else { // if no active notes, set gate off
+    } /*else { // if no active notes, set gate off
         Serial.print("GATE LOW || TOP NOTE: ");
         Serial.println(topNote);
         digitalWrite(gateLED, LOW);
-    }
+    }*/
 }
 
 /*
@@ -127,7 +140,7 @@ int getLowestNote() {
 */
 
 void sendToDac(int note) {
-    float mVPerNote = 4095.000f / maxNotes;
+    float mVPerNote = 47.069f;
     unsigned int mVToDac = (unsigned int) note * mVPerNote;
     if (mVToDac >= 4095) {
         mVToDac = 4095;
