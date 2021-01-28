@@ -13,23 +13,22 @@
 #define LEDboard 13
 #define gateLED 12
 #define maxNotes 87
+#define progBtn 15
 
 mcp4728 myDac = mcp4728(0);
 
 MIDI_CREATE_INSTANCE(HardwareSerial, Serial1, midiIn); // Creates a custom instance of MIDI
 
-/*
- * TODO here: clean the mess, remove unused variables etc.
- */
-
 byte data;
-int topNote;
+int topNote, bottomNote;
+int notePriority;
 
-bool notesList[128] = {0};
+bool notesList[88] = {0};
 
 void setup(){
     pinMode(LEDboard, OUTPUT);
     pinMode(gateLED, OUTPUT);
+    pinMode(progBtn, INPUT);
     midiIn.setHandleNoteOn(noteOn); // Function called, when Note On message received
     midiIn.setHandleNoteOff(noteOff); // same as above but for Note Off message
     midiIn.begin();
@@ -38,40 +37,33 @@ void setup(){
     Serial.begin(9600);
     
     topNote = 0;
+    bottomNote = 0;
+    notePriority = 1; // 0 = polivoks, 1 = monophonic, 2 = duophonic
 }
 
 void loop() {
     midiIn.read();
+    readBtn();
 }
 
 void noteOn(byte channel, byte pitch, byte vel){
-    Serial.print("MIDI NOTE ON: channel: ");
-    Serial.print(channel);
-    Serial.print(", pitch: ");
-    Serial.print(pitch);
-    Serial.print(", velocity: ");
-    Serial.println(vel);
+    printMidiOn(channel, pitch, vel);
     // Function called, when "Note On" received from MIDI
     
     if (vel <= 0) {
         notesList[pitch] = false; // some devices use Note On with 0 velocity as Note Off
-        return;
     } else if (pitch < 0 || pitch > maxNotes) {
         return;
+    } else if (notesList[pitch] == true) {
+        return; // re-trigger trigger outputs here
     } else {
         notesList[pitch] = true; // set note to active notes list
-        handleNote();
     }
-  
+    handleNote();
 }
 
 void noteOff(byte channel, byte pitch, byte vel){
-    Serial.print("MIDI NOTE OFF: channel: ");
-    Serial.print(channel);
-    Serial.print(", pitch: ");
-    Serial.print(pitch);
-    Serial.print(", velocity: ");
-    Serial.println(vel);
+    printMidiOff(channel, pitch, vel);
     // Function called, when "Note Off" received from MIDI
 
     int notesActive = 0;
@@ -81,8 +73,7 @@ void noteOff(byte channel, byte pitch, byte vel){
     } else if (notesList[pitch] == true) {
         notesList[pitch] = false;
     }
-
-    for (int i = 0; i < 128; i++) {   
+    for (int i = 0; i < 88; i++) {   
         if (notesList[pitch] == true) {
             notesActive++;    
         }    
@@ -99,51 +90,82 @@ void noteOff(byte channel, byte pitch, byte vel){
 void handleNote() {
     // get highest active note and "play" it.
     // Highest pressed note has priority over all other notess
-    topNote = 0;
-    bool noteActive = false;
     
-    for (int i = 0; i < 128; i++) {
+    bool topNoteActive = false;
+    bool bottomNoteActive = false;
+
+    // For loops below part of "diamond" note assignment. In the future, break note assignments
+    // to different functions. Can be like this for now
+    
+    for (int i = 0; i < 88; i++) { // top note loop
         if (notesList[i]) {
             topNote = i;
-            noteActive = true; 
+            topNoteActive = true; 
         }
     }
-    if (noteActive == true) { // if active notes, play highest active, set gate on
-        Serial.print("GATE HIGH || TOP NOTE: ");
-        Serial.println(topNote);
-        sendToDac(topNote);
-        digitalWrite(gateLED, HIGH);
-    } /*else { // if no active notes, set gate off
-        Serial.print("GATE LOW || TOP NOTE: ");
-        Serial.println(topNote);
-        digitalWrite(gateLED, LOW);
-    }*/
-}
+    for (int i = 88; i >= 0; i--) {
+        if (notesList[i]) {
+            bottomNote = i;
+            bottomNoteActive = true;    
+        }
+    }
+    Serial.print("BOTTOM NOTE: ");
+    Serial.println(bottomNote);
 
-/*
-int getLowestNote() {
-    // DO NOT USE, TO  BE REMOVED
-    int min = 128;
-    for (int i = 0; i < 128; i++) {
-        if (noteActive[i]) {
-            if (i < min) {
-                min = i;
+    switch (notePriority) {
+        case 0: // Polivoks-style note priority
+            if (topNoteActive == true) {
+                if (bottomNoteActive == false) { // if top is on and bottom off, send top note to both CV outs
+                    sendToDac(topNote, bottomNote, 1);
+                    digitalWrite(gateLED, HIGH);
+                } else if (bottomNoteActive == true) {
+                    if (topNote == bottomNote) { // if both notes are on, but the same value, send same value to both CV outs
+                        sendToDac(topNote, bottomNote, 1); // write to DAC outs: Top note, Bottom note, Channel amount
+                        digitalWrite(gateLED, HIGH);
+                    } else { // if top and bottom notes are on, but different value, send values to corresponding CV outs
+                        sendToDac(topNote, bottomNote, 2); // write to DAC outs: Top note, Bottom note, Channel amount
+                        digitalWrite(gateLED, HIGH);
+                    }
+                }
             }
-        }
+        break;
+        case 1: // Monophonic note priority
+            if (topNoteActive == true) {
+                sendToDac(topNote, topNote, 1); // write to DAC outs: Top note, Bottom note, Channel amount
+                digitalWrite(gateLED, HIGH); // Both channels get top note's value
+            }
+        break;
+        case 2: // Duophonic note priority
+        break;
     }
-    Serial.print("MIN: ");
-    Serial.println(min);
-    return min;
 }
-*/
 
-void sendToDac(int note) {
+void sendToDac(int note1, int note2, int dacAmnt) {
+    
     float mVPerNote = 47.069f;
-    unsigned int mVToDac = (unsigned int) note * mVPerNote;
-    if (mVToDac >= 4095) {
-        mVToDac = 4095;
+    unsigned int mVToDacOut0 = (unsigned int) note1 * mVPerNote;
+    unsigned int mVToDacOut1 = (unsigned int) note2 * mVPerNote;
+    
+    if (mVToDacOut0 >= 4095) {
+        mVToDacOut0 = 4095;
     }
-    myDac.voutWrite(0, mVToDac);
+    if (mVToDacOut1 >= 4095) {
+        mVToDacOut1 = 4095;
+    }
+
+    if (dacAmnt == 1) {
+        myDac.voutWrite(0, mVToDacOut0);
+        myDac.voutWrite(1, mVToDacOut0);
+    } else if (dacAmnt == 2){
+        myDac.voutWrite(0, mVToDacOut0);
+        myDac.voutWrite(1, mVToDacOut1);
+    }
+}
+
+void readBtn() {
+    if (digitalRead(progBtn) == LOW) {
+        Serial.println("Prog btn pressed!");
+    }
 }
 
 void blinkOn(){
@@ -154,11 +176,20 @@ void blinkOff(){
     digitalWrite(LEDboard, LOW);
 }
 
-void printNotes(int n1, int n2, int nActive) {
-    Serial.print("TOP NOTE: ");
-    Serial.print(n1);
-    Serial.print(" || BOTTOM NOTE: ");
-    Serial.print(n2);
-    Serial.print(" || NOTES ACTIVE: ");
-    Serial.println(nActive);
+void printMidiOn(byte ch, byte p, byte vel) {
+    Serial.print("MIDI NOTE ON: channel: ");
+    Serial.print(ch);
+    Serial.print(", pitch: ");
+    Serial.print(p);
+    Serial.print(", velocity: ");
+    Serial.println(vel);
+}
+
+void printMidiOff(byte ch, byte p, byte vel) {
+    Serial.print("MIDI NOTE OFF: channel: ");
+    Serial.print(ch);
+    Serial.print(", pitch: ");
+    Serial.print(p);
+    Serial.print(", velocity: ");
+    Serial.println(vel);
 }

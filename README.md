@@ -25,29 +25,26 @@ Here are the features planned for the module.
 
 **Note on/off logic (Started 18.1.2021, ONGOING)** 
 
-  * Changed whole logic of the system. **Note On** now stores the highest and lowest key pressed.
-  * **Note Off** logic still under work.
-  * Need to get keys stored and removed (true&false) before creating note priorities.
-
 **Gate signals for _Note On_ and _Note Off_ messages (Started 21.1.2021, ONGOING)**
 
-  * Simple **DigitalWrite** turns on a **LED**, signaling a **GATE HIGH**.
+  * 1st channel **gate signal** works, need to add second one for duophonic mode.
+  * **Monophonic** and **Polivoks**-style note priorities working.
 
 **Make functions to send _Note_ values to _DAC_ (Started 23.1.2021, ONGOING)** 
   
   * **DAC** used is the **MCP4728** 4-channel **DAC**.
-  * Need to learn basic usage of a **DAC**.
-  * Currently only one channel sends out voltages.
+  * Currently both channels send appropriate voltages to the scaling op-amp!
 
 **Scale and trim _DAC_ output to match _1v/Oct-scaling_ (Started 23.1.2021, ONGOING)**
 
   * Tracking is pretty accurate over multiple octaves. Some deviation can be seen. Could be remedied by hard-coding a scale factor and tweaking it, or by placing a trim potentiometer to the negative feedback loop of the scale amplifier op-amp.
+  * Voltage variation could be fixed with calibration mode
 
 **Implement _pitchbend_ (Not started)**
 
   * Get pitchbend value from the MIDI message -> add to existing output voltages (Vout = NoteVoltage + pitchbendVoltage).
 
-**Implement changing of MIDI channel**
+**Implement changing of MIDI channel (Started 28.1.2021, ONGOING)**
 
   * Done via a "programming button"
   * Hold down button for a certain period of time to enter programming mode
@@ -60,6 +57,8 @@ Here are the features planned for the module.
 **Add _velocity_ output (POSSIBLE FEATURE)**
 
   * Should work the same way as **Note On**
+
+**Add calibration mode (POSSIBLE FEATURE)**
 
 ## Notes
 
