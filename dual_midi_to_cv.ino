@@ -11,7 +11,8 @@
 #include "mcp4728.h"
 
 #define LEDboard 13
-#define gateLED 12
+#define gate1LED 12
+#define gate2LED 11
 #define maxNotes 87
 #define progBtn 15
 
@@ -20,17 +21,19 @@ mcp4728 myDac = mcp4728(0);
 MIDI_CREATE_INSTANCE(HardwareSerial, Serial1, midiIn); // Creates a custom instance of MIDI
 
 byte data;
-int topNote, bottomNote;
-int notePriority;
+int topNote, bottomNote, activeNotes;
+int notePriority, noteAssignment;
+int8_t noteOrder[20] = {0}, orderIndx = {0};
 
 bool notesList[88] = {0};
 
 void setup(){
     pinMode(LEDboard, OUTPUT);
-    pinMode(gateLED, OUTPUT);
+    pinMode(gate1LED, OUTPUT);
+    pinMode(gate2LED, OUTPUT);
     pinMode(progBtn, INPUT);
     midiIn.setHandleNoteOn(noteOn); // Function called, when Note On message received
-    midiIn.setHandleNoteOff(noteOff); // same as above but for Note Off message
+    midiIn.setHandleNoteOff(noteOff); // Function called, when Note Off message received
     midiIn.begin();
     myDac.begin();
     myDac.vdd(5000);
@@ -39,6 +42,7 @@ void setup(){
     topNote = 0;
     bottomNote = 0;
     notePriority = 1; // 0 = polivoks, 1 = monophonic, 2 = duophonic
+    noteAssignment = 1; // 0 = diamond, 1 = last note
 }
 
 void loop() {
@@ -50,14 +54,20 @@ void noteOn(byte channel, byte pitch, byte vel){
     printMidiOn(channel, pitch, vel);
     // Function called, when "Note On" received from MIDI
     
-    if (vel <= 0) {
+    if (pitch < 0 || pitch > maxNotes) {
+       return; 
+    } else if (vel <= 0) {
         notesList[pitch] = false; // some devices use Note On with 0 velocity as Note Off
-    } else if (pitch < 0 || pitch > maxNotes) {
-        return;
     } else if (notesList[pitch] == true) {
         return; // re-trigger trigger outputs here
     } else {
-        notesList[pitch] = true; // set note to active notes list
+        notesList[pitch] = true;
+    }
+    if (noteAssignment == 1) {
+        if (notesList[pitch] == true) {
+            orderIndx = (orderIndx + 1) % 20;
+            noteOrder[orderIndx] = pitch;
+        } 
     }
     handleNote();
 }
@@ -65,78 +75,82 @@ void noteOn(byte channel, byte pitch, byte vel){
 void noteOff(byte channel, byte pitch, byte vel){
     printMidiOff(channel, pitch, vel);
     // Function called, when "Note Off" received from MIDI
-
-    int notesActive = 0;
     
     if (notesList[pitch] == false) {
         return;
     } else if (notesList[pitch] == true) {
         notesList[pitch] = false;
     }
-    for (int i = 0; i < 88; i++) {   
-        if (notesList[pitch] == true) {
-            notesActive++;    
-        }    
-    }
-    if (notesActive != 0) {
-        return;
-    } else if (notesActive == 0){
-        digitalWrite(gateLED, LOW);    
-    }
     handleNote();
-    
 }
 
 void handleNote() {
     // get highest active note and "play" it.
     // Highest pressed note has priority over all other notess
-    
-    bool topNoteActive = false;
-    bool bottomNoteActive = false;
 
     // For loops below part of "diamond" note assignment. In the future, break note assignments
     // to different functions. Can be like this for now
-    
-    for (int i = 0; i < 88; i++) { // top note loop
-        if (notesList[i]) {
-            topNote = i;
-            topNoteActive = true; 
-        }
-    }
-    for (int i = 88; i >= 0; i--) {
-        if (notesList[i]) {
-            bottomNote = i;
-            bottomNoteActive = true;    
-        }
-    }
-    Serial.print("BOTTOM NOTE: ");
-    Serial.println(bottomNote);
-
     switch (notePriority) {
         case 0: // Polivoks-style note priority
-            if (topNoteActive == true) {
-                if (bottomNoteActive == false) { // if top is on and bottom off, send top note to both CV outs
-                    sendToDac(topNote, bottomNote, 1);
-                    digitalWrite(gateLED, HIGH);
-                } else if (bottomNoteActive == true) {
-                    if (topNote == bottomNote) { // if both notes are on, but the same value, send same value to both CV outs
-                        sendToDac(topNote, bottomNote, 1); // write to DAC outs: Top note, Bottom note, Channel amount
-                        digitalWrite(gateLED, HIGH);
-                    } else { // if top and bottom notes are on, but different value, send values to corresponding CV outs
-                        sendToDac(topNote, bottomNote, 2); // write to DAC outs: Top note, Bottom note, Channel amount
-                        digitalWrite(gateLED, HIGH);
-                    }
-                }
+            topNote = topDiamondNote();
+            bottomNote = bottomDiamondNote();
+            
+            if (topNote == bottomNote) {
+                sendToDac(topNote, bottomNote, 1);
+                allGates(true);
+            } else if (topNote != bottomNote) {
+                sendToDac(topNote, bottomNote, 2);
+                allGates(true);
             }
+
         break;
         case 1: // Monophonic note priority
-            if (topNoteActive == true) {
-                sendToDac(topNote, topNote, 1); // write to DAC outs: Top note, Bottom note, Channel amount
-                digitalWrite(gateLED, HIGH); // Both channels get top note's value
+            // ONLY LAST NOTE ASSIGNMENT
+            int8_t noteIndx;
+  
+            for (int i=0; i<20; i++) {
+                noteIndx = noteOrder[mod(orderIndx-i, 20)];
+                if (notesList[noteIndx] == true) {
+                    sendToDac(noteIndx, noteIndx, 1);
+                    allGates(true);
+                  return;
+                }
             }
+            allGates(false); // All notes are off
         break;
         case 2: // Duophonic note priority
+            
         break;
+    }
+}
+
+int topDiamondNote() {
+    int note = 0;
+    for (int i = 0; i < 88; i++) { // top note loop
+        if (notesList[i]) {
+            note = i;
+        }
+    }
+    return note;    
+}
+
+int bottomDiamondNote() {
+    int note = 0;
+    for (int i = 88; i >= 0; i--) {
+        if (notesList[i]) {
+            note = i;   
+        }
+    }
+    return note;
+}
+
+void allGates(bool i) {
+    if (i == true) {
+        digitalWrite(gate1LED, HIGH);
+        digitalWrite(gate2LED, HIGH);
+    } else {
+        digitalWrite(gate1LED, LOW);
+        digitalWrite(gate2LED, LOW);
     }
 }
 
@@ -160,6 +174,11 @@ void sendToDac(int note1, int note2, int dacAmnt) {
         myDac.voutWrite(0, mVToDacOut0);
         myDac.voutWrite(1, mVToDacOut1);
     }
+}
+
+int mod(int a, int b) {
+    int r = a % b;
+    return r < 0 ? r + b : r;
 }
 
 void readBtn() {
