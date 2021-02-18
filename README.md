@@ -1,5 +1,9 @@
 # Dual MIDI to CV
 
+_**This project is currently on hold as I work on my Bachelor's thesis. I need the Teensy LC I used in this project for the work done on the thesis. Expect to see me back on this project around May of 2021, sooner if possible :). The project is now as it was in January of 2021 before I started working on my thesis.**_
+
+
+
 A simple circuit to get 2 CV outs from MIDI. CV will be scaled to 1V/Oct.
 
 I'm using a Teensy LC for development. MIDI takes one serial port, so I cannot use the serial monitor on the Arduino Uno. Teensy LC has the advantage of having multiple serial ports.
